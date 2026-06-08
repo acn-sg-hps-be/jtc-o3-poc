@@ -41,7 +41,7 @@ export default function LoginPage({ clientId, redirectUri, onSignIn, error }) {
             <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
               <DescriptionOutlinedIcon color="primary" fontSize="large" />
               <Box>
-                <Typography variant="h5" sx={{ lineHeight: 1.2 }}>ACC Forms — POC</Typography>
+                <Typography variant="h5" sx={{ lineHeight: 1.2 }}>Forma Forms — POC</Typography>
                 <Typography variant="body2" color="text.secondary">Autodesk Construction Cloud</Typography>
               </Box>
             </Stack>

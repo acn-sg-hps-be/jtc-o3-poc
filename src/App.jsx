@@ -97,7 +97,7 @@ export default function App() {
       <AppBar position="static" elevation={0}>
         <Toolbar sx={{ gap: 2 }}>
           <DescriptionOutlinedIcon />
-          <Typography variant="h6" sx={{ whiteSpace: 'nowrap' }}>ACC Forms — POC</Typography>
+          <Typography variant="h6" sx={{ whiteSpace: 'nowrap' }}>Forma Forms — POC</Typography>
 
           {/* Module navigation lives in the top menu */}
           <Tabs

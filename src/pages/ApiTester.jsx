@@ -19,7 +19,9 @@ import {
 import { useApiCall, ResultPanel } from '../shared.jsx'
 
 // Raw API testing page: fire each endpoint with hand-edited JSON bodies.
-export default function ApiTester({ token, projectId, baseUrl }) {
+// This module also hosts the shared connection settings (Project ID / base URL),
+// letting users override the env defaults that both modules use.
+export default function ApiTester({ token, projectId, baseUrl, setProjectId, setBaseUrl }) {
   const [layoutId, setLayoutId] = useState('f6a63c2d-c7ea-4c6f-b2b8-fbd2a1c27e79')
   const [sectionId, setSectionId] = useState('')
   const [templateId, setTemplateId] = useState('')
@@ -51,6 +53,24 @@ export default function ApiTester({ token, projectId, baseUrl }) {
 
   return (
     <Stack spacing={3}>
+      <Card variant="outlined">
+        <CardContent>
+          <Typography variant="h6" gutterBottom>Connection</Typography>
+          <Stack spacing={2}>
+            <TextField
+              label="Project ID" value={projectId} fullWidth size="small"
+              placeholder="xxxxxxxx-xxxx-..." onChange={(e) => setProjectId(e.target.value)}
+              helperText='Defaults from env. Overriding here applies to both modules this session (not saved).'
+            />
+            <TextField
+              label="API base URL" value={baseUrl} fullWidth size="small"
+              onChange={(e) => setBaseUrl(e.target.value)}
+              helperText="Forms API allows direct browser calls (CORS *). Point at your own backend later if you add one."
+            />
+          </Stack>
+        </CardContent>
+      </Card>
+
       <Card variant="outlined">
         <CardContent>
           <Typography variant="h6" gutterBottom>Read</Typography>

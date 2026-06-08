@@ -1,4 +1,7 @@
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   Button,
@@ -6,14 +9,21 @@ import {
   CardContent,
   Stack,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import LoginIcon from '@mui/icons-material/Login'
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
 
+const mono = {
+  input: { readOnly: true },
+  htmlInput: { sx: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } },
+}
+
 // Full-screen sign-in shown until the user has a valid PKCE token.
-export default function LoginPage({ clientId, setClientId, redirectUri, onSignIn, error }) {
+// End users only see the sign-in button; the technical fields are read-only
+// and tucked away under "Advanced settings".
+export default function LoginPage({ clientId, redirectUri, onSignIn, error }) {
   return (
     <Box
       sx={{
@@ -41,22 +51,6 @@ export default function LoginPage({ clientId, setClientId, redirectUri, onSignIn
               no password or client secret is handled by this app.
             </Typography>
 
-            <TextField
-              label="APS Client ID" value={clientId} fullWidth size="small"
-              onChange={(e) => setClientId(e.target.value)}
-              helperText='From your APS app (Desktop, Mobile, Single-Page App type).'
-            />
-
-            <Tooltip title="Register this exact URL as the app's Callback URL in the APS portal">
-              <TextField
-                label="Redirect URI (register this in APS)" value={redirectUri} fullWidth size="small"
-                slotProps={{
-                  input: { readOnly: true },
-                  htmlInput: { sx: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } },
-                }}
-              />
-            </Tooltip>
-
             <Button
               variant="contained" size="large" startIcon={<LoginIcon />}
               disabled={!clientId} onClick={onSignIn}
@@ -66,10 +60,29 @@ export default function LoginPage({ clientId, setClientId, redirectUri, onSignIn
 
             {error && <Alert severity="error">{error}</Alert>}
 
-            <Alert severity="info" sx={{ '& .MuiAlert-message': { fontSize: 13 } }}>
-              The app's Client ID must be added as a <b>Custom Integration</b> in the ACC Account
-              Admin, or Forms API calls will return <code>403</code> even with a valid token.
-            </Alert>
+            <Accordion variant="outlined" disableGutters sx={{ '&:before': { display: 'none' } }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="body2" color="text.secondary">Advanced settings</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Stack spacing={2}>
+                  <TextField
+                    label="APS Client ID" value={clientId} fullWidth size="small"
+                    slotProps={mono}
+                    helperText="Configured at build time (VITE_APS_CLIENT_ID)."
+                  />
+                  <TextField
+                    label="Redirect URI" value={redirectUri} fullWidth size="small"
+                    slotProps={mono}
+                    helperText="Must be registered as a Callback URL on the APS app."
+                  />
+                  <Alert severity="info" sx={{ '& .MuiAlert-message': { fontSize: 13 } }}>
+                    The app's Client ID must be added as a <b>Custom Integration</b> in the ACC
+                    Account Admin, or Forms API calls return <code>403</code>.
+                  </Alert>
+                </Stack>
+              </AccordionDetails>
+            </Accordion>
           </Stack>
         </CardContent>
       </Card>

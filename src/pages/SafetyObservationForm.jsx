@@ -98,7 +98,7 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
     <Stack spacing={3}>
       {!canCall && (
         <Alert severity="warning">
-          Enter a <b>Project ID</b> in the Connection box above to enable this form.
+          No <b>Project ID</b> is set. Add one under the <b>API Tester</b> module's Connection settings to enable this form.
         </Alert>
       )}
 

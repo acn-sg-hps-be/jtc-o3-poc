@@ -1,27 +1,25 @@
 import { useEffect, useState } from 'react'
 import {
-  Alert,
   AppBar,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Container,
-  Divider,
   Stack,
   Tab,
   Tabs,
   TextField,
   Toolbar,
-  Tooltip,
   Typography,
 } from '@mui/material'
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
-import LoginIcon from '@mui/icons-material/Login'
 import LogoutIcon from '@mui/icons-material/Logout'
 import ApiTester from './pages/ApiTester.jsx'
 import SafetyObservationForm from './pages/SafetyObservationForm.jsx'
+import LoginPage from './pages/LoginPage.jsx'
 import {
   login,
   logout,
@@ -48,32 +46,32 @@ const PAGES = [
 ]
 
 export default function App() {
-  const [token, setToken] = usePersisted('acc_token', '')
   const [projectId, setProjectId] = usePersisted('acc_project_id', '')
   const [baseUrl, setBaseUrl] = usePersisted('acc_base_url', DIRECT_HOST)
   const [clientId, setClientId] = usePersisted('aps_client_id', import.meta.env.VITE_APS_CLIENT_ID ?? '')
   const [page, setPage] = useState('safety')
 
-  const [authMsg, setAuthMsg] = useState(null)
+  // Auth is sourced solely from the PKCE token record (single source of truth).
+  const [auth, setAuth] = useState(() => {
+    const t = getToken()
+    return t && !isExpired(t) ? t : null
+  })
+  const [ready, setReady] = useState(false)
   const [authErr, setAuthErr] = useState(null)
   const redirectUri = getRedirectUri()
 
-  // On load: if we came back from Autodesk with ?code=..., finish the PKCE exchange.
   useEffect(() => {
+    // Tidy up the legacy duplicate token key — PKCE's aps_token is authoritative now.
+    localStorage.removeItem('acc_token')
     handleRedirectCallback()
-      .then((tok) => {
-        if (tok) {
-          setToken(tok.access_token)
-          setAuthMsg('Signed in with Autodesk — access token loaded.')
-        }
-      })
+      .then((tok) => { if (tok) setAuth(tok) })
       .catch((e) => setAuthErr(e.message))
+      .finally(() => setReady(true))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function signIn() {
     setAuthErr(null)
-    setAuthMsg(null)
     try {
       await login({ clientId, redirectUri })
     } catch (e) {
@@ -83,17 +81,31 @@ export default function App() {
 
   function signOut() {
     logout()
-    setToken('')
-    setAuthErr(null)
-    setAuthMsg('Signed out.')
+    setAuth(null)
   }
 
-  // Status of the PKCE-issued token (a manual paste won't have a stored record).
-  const apsTok = getToken()
-  const pkceActive = !!apsTok && !isExpired(apsTok)
-  const expiresLabel = apsTok?.expires_at
-    ? new Date(apsTok.expires_at).toLocaleTimeString()
-    : null
+  const authed = !!auth && !isExpired(auth)
+  const token = authed ? auth.access_token : ''
+  const expiresLabel = auth?.expires_at ? new Date(auth.expires_at).toLocaleTimeString() : null
+
+  // Returning from Autodesk with ?code=...: show a spinner while we finish the exchange,
+  // instead of briefly flashing the login page.
+  const completing = !ready && new URLSearchParams(window.location.search).has('code')
+  if (completing) {
+    return <CenteredSpinner label="Completing sign-in…" />
+  }
+
+  if (!authed) {
+    return (
+      <LoginPage
+        clientId={clientId}
+        setClientId={setClientId}
+        redirectUri={redirectUri}
+        onSignIn={signIn}
+        error={authErr}
+      />
+    )
+  }
 
   const ActivePage = PAGES.find((p) => p.key === page).Component
 
@@ -103,75 +115,22 @@ export default function App() {
         <Toolbar>
           <DescriptionOutlinedIcon sx={{ mr: 1.5 }} />
           <Typography variant="h6" sx={{ flexGrow: 1 }}>ACC Forms — POC</Typography>
-          <Typography variant="body2" sx={{ opacity: 0.85 }}>Autodesk Construction Cloud</Typography>
+          {expiresLabel && (
+            <Chip
+              size="small" label={`Session until ${expiresLabel}`}
+              sx={{ mr: 2, bgcolor: 'rgba(255,255,255,0.18)', color: '#fff' }}
+            />
+          )}
+          <Button color="inherit" startIcon={<LogoutIcon />} onClick={signOut}>Sign out</Button>
         </Toolbar>
       </AppBar>
 
       <Container maxWidth="md" sx={{ py: 4 }}>
-        {/* Shared connection settings (used by both pages) */}
+        {/* Shared settings (used by both pages). The token comes from sign-in. */}
         <Card variant="outlined" sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h6" gutterBottom>Connection</Typography>
-
-            {/* Authentication: PKCE sign-in (no backend) with a manual-token fallback */}
-            <Stack spacing={1.5} sx={{ mb: 2 }}>
-              <Stack direction="row" spacing={1.5} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                <Typography variant="subtitle2">Sign in with Autodesk (PKCE)</Typography>
-                {pkceActive ? (
-                  <Chip color="success" size="small"
-                    label={expiresLabel ? `Authenticated · expires ${expiresLabel}` : 'Authenticated'} />
-                ) : token ? (
-                  <Chip color="default" size="small" variant="outlined" label="Token set manually" />
-                ) : (
-                  <Chip color="warning" size="small" label="Not authenticated" />
-                )}
-              </Stack>
-
-              <TextField
-                label="APS Client ID" value={clientId} fullWidth size="small"
-                placeholder="From your APS app (Desktop, Mobile, Single-Page App type)"
-                onChange={(e) => setClientId(e.target.value)}
-                helperText='App type must be "Desktop, Mobile, Single-Page App" — a public client with no secret.'
-              />
-
-              <Tooltip title="Register this exact URL as the app's Callback URL in the APS portal">
-                <TextField
-                  label="Redirect URI (register this in APS)" value={redirectUri} fullWidth size="small"
-                  slotProps={{
-                    input: { readOnly: true },
-                    htmlInput: { sx: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } },
-                  }}
-                />
-              </Tooltip>
-
-              <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
-                <Button variant="contained" startIcon={<LoginIcon />} disabled={!clientId} onClick={signIn}>
-                  Sign in with Autodesk
-                </Button>
-                <Button variant="outlined" color="inherit" startIcon={<LogoutIcon />}
-                  disabled={!token && !pkceActive} onClick={signOut}>
-                  Sign out
-                </Button>
-              </Stack>
-
-              {authMsg && <Alert severity="success" onClose={() => setAuthMsg(null)}>{authMsg}</Alert>}
-              {authErr && <Alert severity="error" onClose={() => setAuthErr(null)}>{authErr}</Alert>}
-
-              <Alert severity="info" sx={{ '& .MuiAlert-message': { fontSize: 13 } }}>
-                Add this app's Client ID as a <b>Custom Integration</b> in the ACC Account Admin, or
-                Forms API calls will return <code>403</code> even with a valid token.
-              </Alert>
-            </Stack>
-
-            <Divider sx={{ my: 2 }} />
-
             <Stack spacing={2}>
-              <TextField
-                label="Access token" type="password" value={token} fullWidth size="small"
-                placeholder="Set by sign-in, or paste a Bearer token manually"
-                onChange={(e) => setToken(e.target.value)}
-                helperText="Filled automatically after PKCE sign-in. You can still paste a token by hand."
-              />
               <TextField
                 label="Project ID" value={projectId} fullWidth size="small"
                 placeholder="xxxxxxxx-xxxx-..." onChange={(e) => setProjectId(e.target.value)}
@@ -195,6 +154,18 @@ export default function App() {
 
         <ActivePage token={token} projectId={projectId} baseUrl={baseUrl} />
       </Container>
+    </Box>
+  )
+}
+
+function CenteredSpinner({ label }) {
+  return (
+    <Box sx={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 2, bgcolor: 'background.default',
+    }}>
+      <CircularProgress />
+      <Typography color="text.secondary">{label}</Typography>
     </Box>
   )
 }

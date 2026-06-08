@@ -98,7 +98,7 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
     <Stack spacing={3}>
       {!canCall && (
         <Alert severity="warning">
-          Enter an access token and project ID in the <b>Connection</b> box above to enable this form.
+          Enter a <b>Project ID</b> in the Connection box above to enable this form.
         </Alert>
       )}
 

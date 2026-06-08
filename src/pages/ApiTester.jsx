@@ -54,7 +54,7 @@ export default function ApiTester({ token, projectId, baseUrl }) {
       <Card variant="outlined">
         <CardContent>
           <Typography variant="h6" gutterBottom>Read</Typography>
-          <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+          <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
             <Button variant="contained" disabled={off}
               onClick={() => run(() => listFormTemplates(baseUrl, token, projectId))}>
               List form templates

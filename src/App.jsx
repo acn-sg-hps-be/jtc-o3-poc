@@ -51,7 +51,7 @@ export default function App() {
   const [token, setToken] = usePersisted('acc_token', '')
   const [projectId, setProjectId] = usePersisted('acc_project_id', '')
   const [baseUrl, setBaseUrl] = usePersisted('acc_base_url', DIRECT_HOST)
-  const [clientId, setClientId] = usePersisted('aps_client_id', '')
+  const [clientId, setClientId] = usePersisted('aps_client_id', import.meta.env.VITE_APS_CLIENT_ID ?? '')
   const [page, setPage] = useState('safety')
 
   const [authMsg, setAuthMsg] = useState(null)

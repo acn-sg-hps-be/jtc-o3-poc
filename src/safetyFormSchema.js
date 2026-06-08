@@ -45,6 +45,13 @@ export const SECTIONS = [
   },
   {
     label: 'Part IIIa – QP Approval',
+    // Branching: this section only applies when the Part III question
+    // "Is a Qualified Person (QP) review required?" is answered "Yes".
+    conditional: {
+      fieldId: '68bd8313-08a1-411d-8a07-5373770450c7',
+      equals: 'Yes',
+      because: 'a QP review is required',
+    },
     fields: [
       { fieldId: '6bd6af87-a2d8-4eab-a616-f2065f855668', label: "Have the contractor's works been satisfactorily completed?", valueName: 'choiceVal', options: ['Yes', 'No', 'Answer 3'] },
       { fieldId: 'cd86dba7-e503-4c47-a200-958f7da5db54', label: "QP's Details", valueName: 'textVal' },

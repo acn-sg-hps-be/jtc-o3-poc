@@ -23,14 +23,12 @@ import {
   Typography,
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import CallSplitIcon from '@mui/icons-material/CallSplit'
 import { createForm, batchUpdateValues } from '../api/accForms.js'
 import { SECTIONS, SAFETY_TEMPLATE_ID } from '../safetyFormSchema.js'
 
 const today = new Date().toISOString().slice(0, 10)
 const isEmpty = (v) => v === undefined || v === '' || v === null
-
-// "Part I - Observation" -> "Part I" (labels use either a hyphen or an en/em dash)
-const shortLabel = (full) => full.split(/\s[-–—]\s/)[0].trim()
 
 function fmtError(e) {
   const base = e.status ? `${e.message} (status ${e.status})` : e.message
@@ -38,7 +36,9 @@ function fmtError(e) {
 }
 
 // Custom UI for the "Safety Observation Form" template, presented as a step-by-step
-// wizard. Step 1 creates the draft form; each section step auto-saves its values
+// wizard with conditional branching (Forma itself has no branching):
+//   Details → Part I → Part II → Part III → [Part IIIa, only if QP review required] → Part IV → Review
+// The Details step creates the draft form; each section step auto-saves its values
 // (v2 values:batch-update) when you advance; the final step re-saves everything.
 export default function SafetyObservationForm({ token, projectId, baseUrl }) {
   const [name, setName] = useState('Safety Observation Form')
@@ -50,7 +50,6 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
   const setField = (fieldId, v) => setValues((prev) => ({ ...prev, [fieldId]: v }))
 
   const [activeStep, setActiveStep] = useState(0)
-  const [completed, setCompleted] = useState({})
   const [busy, setBusy] = useState(false)
   const [stepError, setStepError] = useState(null)
   const [missingIds, setMissingIds] = useState(new Set())
@@ -60,11 +59,37 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
 
   const steps = [
     { key: 'details', label: 'Details' },
-    ...SECTIONS.map((s) => ({ key: s.label, label: shortLabel(s.label), section: s })),
+    ...SECTIONS.map((s) => ({ key: s.label, label: s.label.trim(), section: s })),
     { key: 'review', label: 'Review' },
   ]
   const lastIndex = steps.length - 1
   const current = steps[activeStep]
+
+  // --- Branching helpers -------------------------------------------------
+  const isSectionSkipped = (section) =>
+    !!section?.conditional && values[section.conditional.fieldId] !== section.conditional.equals
+  const isStepSkipped = (i) => isSectionSkipped(steps[i]?.section)
+
+  function nextVisible(from) {
+    for (let j = from + 1; j <= lastIndex; j++) if (!isStepSkipped(j)) return j
+    return lastIndex
+  }
+  function prevVisible(from) {
+    for (let j = from - 1; j >= 0; j--) if (!isStepSkipped(j)) return j
+    return 0
+  }
+
+  // If the current section controls a conditional (branching) section, describe the branch.
+  function branchInfo() {
+    if (!current.section) return null
+    const controlled = SECTIONS.find(
+      (s) => s.conditional && current.section.fields.some((f) => f.fieldId === s.conditional.fieldId),
+    )
+    if (!controlled) return null
+    const decided = !isEmpty(values[controlled.conditional.fieldId])
+    const willInclude = values[controlled.conditional.fieldId] === controlled.conditional.equals
+    return { controlled, decided, willInclude }
+  }
 
   function missingInSection(section) {
     return section.fields.filter((f) => f.required && isEmpty(values[f.fieldId]))
@@ -74,25 +99,20 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
       .filter((f) => !isEmpty(values[f.fieldId]))
       .map((f) => ({ fieldId: f.fieldId, [f.valueName]: values[f.fieldId] }))
   }
+  // Final save excludes any branch that was skipped.
   function allCustomValues() {
-    return SECTIONS.flatMap(sectionCustomValues)
-  }
-
-  function advance() {
-    setCompleted((c) => ({ ...c, [activeStep]: true }))
-    setActiveStep((s) => Math.min(s + 1, lastIndex))
+    return SECTIONS.filter((s) => !isSectionSkipped(s)).flatMap(sectionCustomValues)
   }
 
   function handleBack() {
     setStepError(null)
     setMissingIds(new Set())
-    setActiveStep((s) => Math.max(0, s - 1))
+    setActiveStep((s) => prevVisible(s))
   }
 
   async function handleNext() {
     setStepError(null)
 
-    // Step 1 — create the draft form, then advance.
     if (current.key === 'details') {
       if (isEmpty(name) || isEmpty(formDate)) {
         setStepError('Form name and date are required.')
@@ -108,7 +128,7 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
           })
           setFormId(created?.id || '')
         }
-        advance()
+        setActiveStep((s) => nextVisible(s))
       } catch (e) {
         setStepError(fmtError(e))
       } finally {
@@ -117,7 +137,6 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
       return
     }
 
-    // Section step — validate required fields, then auto-save this section's values.
     if (current.section) {
       const miss = missingInSection(current.section)
       if (miss.length) {
@@ -136,7 +155,7 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
         if (customValues.length) {
           await batchUpdateValues(baseUrl, token, projectId, formId, { customValues })
         }
-        advance()
+        setActiveStep((s) => nextVisible(s))
       } catch (e) {
         setStepError(fmtError(e))
       } finally {
@@ -145,14 +164,13 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
       return
     }
 
-    // Review step — final safety re-save of everything.
+    // Review — final safety re-save of everything (skipped branches excluded).
     setBusy(true)
     try {
       const customValues = allCustomValues()
       if (customValues.length) {
         await batchUpdateValues(baseUrl, token, projectId, formId, { customValues })
       }
-      setCompleted((c) => ({ ...c, [activeStep]: true }))
       setFinished(true)
     } catch (e) {
       setStepError(fmtError(e))
@@ -168,7 +186,6 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
     setFormDate(today)
     setDescription('')
     setActiveStep(0)
-    setCompleted({})
     setFinished(false)
     setStepError(null)
     setMissingIds(new Set())
@@ -178,6 +195,8 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
     current.key === 'details' ? 'Create draft & continue'
     : current.key === 'review' ? 'Finish & save'
     : 'Save & next'
+
+  const branch = branchInfo()
 
   return (
     <Stack spacing={3}>
@@ -198,14 +217,41 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
         </Typography>
       </Box>
 
-      {/* Horizontal step navigation */}
+      {/* Horizontal step navigation with full section names + conditional branch */}
       <Box sx={{ overflowX: 'auto', py: 1 }}>
-        <Stepper activeStep={activeStep} alternativeLabel sx={{ minWidth: 640 }}>
-          {steps.map((s, i) => (
-            <Step key={s.key} completed={!!completed[i]}>
-              <StepLabel>{s.label}</StepLabel>
-            </Step>
-          ))}
+        <Stepper
+          activeStep={activeStep}
+          alternativeLabel
+          sx={{
+            minWidth: 860,
+            '& .MuiStepLabel-label': { fontSize: 11, lineHeight: 1.25, mt: 0.5 },
+            '& .MuiStepLabel-label.Mui-active': { fontWeight: 700 },
+          }}
+        >
+          {steps.map((s, i) => {
+            const cond = s.section?.conditional
+            const stepProps = {}
+            const labelProps = {}
+            if (cond) {
+              const decided = !isEmpty(values[cond.fieldId])
+              const met = values[cond.fieldId] === cond.equals
+              if (isStepSkipped(i)) stepProps.completed = false
+              labelProps.optional = (
+                <Typography variant="caption" sx={{ fontSize: 10 }}
+                  color={met ? 'primary' : 'text.secondary'}>
+                  {!decided ? 'if QP required' : met ? 'QP required' : 'skipped'}
+                </Typography>
+              )
+              labelProps.icon = <CallSplitIcon fontSize="small"
+                color={isStepSkipped(i) ? 'disabled' : met ? 'primary' : 'action'} />
+            }
+            return (
+              <Step key={s.key} {...stepProps}
+                sx={isStepSkipped(i) ? { opacity: 0.45 } : undefined}>
+                <StepLabel {...labelProps}>{s.label}</StepLabel>
+              </Step>
+            )
+          })}
         </Stepper>
       </Box>
 
@@ -255,6 +301,23 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
                 <FieldInput key={f.fieldId} field={f} value={values[f.fieldId]}
                   error={missingIds.has(f.fieldId)} onChange={setField} />
               ))}
+
+              {branch && (
+                <Alert
+                  severity={!branch.decided ? 'info' : branch.willInclude ? 'warning' : 'success'}
+                  icon={<CallSplitIcon fontSize="small" />}
+                >
+                  {!branch.decided ? (
+                    <>Answer “{questionLabel(branch)}” to set the path — choosing{' '}
+                      <b>{branch.controlled.conditional.equals}</b> adds{' '}
+                      <b>{branch.controlled.label.trim()}</b>.</>
+                  ) : branch.willInclude ? (
+                    <>Next: <b>{branch.controlled.label.trim()}</b> (because {branch.controlled.conditional.because}).</>
+                  ) : (
+                    <><b>{branch.controlled.label.trim()}</b> will be skipped — continuing to the next section.</>
+                  )}
+                </Alert>
+              )}
             </Stack>
           ) : (
             // Review
@@ -264,11 +327,14 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
                 {allCustomValues().length} field value(s) will be saved to form <b>{formId}</b>.
               </Typography>
               {SECTIONS.map((s) => {
+                const skipped = isSectionSkipped(s)
                 const filled = s.fields.filter((f) => !isEmpty(values[f.fieldId]))
                 return (
-                  <Box key={s.label}>
-                    <Typography variant="subtitle2">{s.label.trim()}</Typography>
-                    {filled.length === 0 ? (
+                  <Box key={s.label} sx={{ opacity: skipped ? 0.5 : 1 }}>
+                    <Typography variant="subtitle2">
+                      {s.label.trim()}{skipped && ' — skipped'}
+                    </Typography>
+                    {skipped ? null : filled.length === 0 ? (
                       <Typography variant="body2" color="text.secondary">— no values —</Typography>
                     ) : (
                       <Box component="ul" sx={{ m: 0, pl: 3 }}>
@@ -311,6 +377,14 @@ export default function SafetyObservationForm({ token, projectId, baseUrl }) {
       )}
     </Stack>
   )
+}
+
+// The label of the controlling (branching) question, for the in-step hint.
+function questionLabel(branch) {
+  const f = SECTIONS.flatMap((s) => s.fields).find(
+    (x) => x.fieldId === branch.controlled.conditional.fieldId,
+  )
+  return f ? f.label.trim() : 'the branching question'
 }
 
 function FieldInput({ field, value, error, onChange }) {

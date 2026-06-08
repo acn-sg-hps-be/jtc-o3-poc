@@ -136,7 +136,7 @@ export async function handleRedirectCallback() {
   })
   const res = await fetch(`${AUTH_BASE}/token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
     body,
   })
   const data = await res.json()
@@ -165,7 +165,7 @@ export async function refresh({ clientId, scope = DEFAULT_SCOPE }) {
   })
   const res = await fetch(`${AUTH_BASE}/token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
     body,
   })
   const data = await res.json()

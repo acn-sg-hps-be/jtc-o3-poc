@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wireframes — Parallel Review Workflow</title>
+<style>
+  :root { --line:#9aa4b2; --ink:#2b3440; --muted:#6b7785; --bg:#f4f6f8; --card:#fff; --accent:#0a66c2; --ok:#2e7d32; --wip:#ed6c02; }
+  * { box-sizing:border-box; }
+  body { font-family: ui-sans-serif, system-ui, Arial; margin:0; background:var(--bg); color:var(--ink); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 20px; }
+  h2 { font-size: 16px; margin: 28px 0 8px; }
+  .sub { color:var(--muted); font-size: 13px; margin: 0 0 12px; }
+  .frame { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:8px; }
+  .appbar { background:var(--accent); color:#fff; border-radius:8px; padding:10px 14px; font-size:13px; display:flex; gap:18px; align-items:center; }
+  .appbar .tab { opacity:.8; } .appbar .tab.active { opacity:1; font-weight:700; border-bottom:2px solid #fff; padding-bottom:2px; }
+  .legend { font-size:12px; color:var(--muted); margin-top:6px; }
+  .chip { display:inline-block; border:1px solid var(--line); border-radius:12px; padding:1px 8px; font-size:11px; color:var(--muted); }
+  .chip.ok { color:var(--ok); border-color:var(--ok); } .chip.wip { color:var(--wip); border-color:var(--wip); }
+
+  /* horizontal stepper */
+  .stepper { display:flex; align-items:flex-start; gap:4px; margin:14px 0; }
+  .step { flex:1; text-align:center; position:relative; }
+  .step .dot { width:26px; height:26px; border-radius:50%; background:#cfd6df; color:#fff; line-height:26px; margin:0 auto 6px; font-size:12px; }
+  .step.active .dot { background:var(--accent); } .step.done .dot { background:var(--ok); }
+  .step .lbl { font-size:10.5px; line-height:1.2; color:var(--muted); }
+  .step.active .lbl { color:var(--ink); font-weight:700; }
+  .step::before { content:""; position:absolute; top:13px; left:-50%; width:100%; height:2px; background:var(--line); z-index:0; }
+  .step:first-child::before { display:none; }
+  .step .dot { position:relative; z-index:1; }
+
+  /* sub-tabs */
+  .subtabs { display:flex; gap:6px; border-bottom:1px solid var(--line); margin-bottom:12px; flex-wrap:wrap; }
+  .subtab { padding:6px 10px; font-size:12px; border:1px solid var(--line); border-bottom:none; border-radius:6px 6px 0 0; background:#eef1f5; color:var(--muted); }
+  .subtab.active { background:#fff; color:var(--ink); font-weight:700; border-bottom:2px solid var(--accent); }
+  .field { margin:10px 0; } .field .fl { font-size:11px; color:var(--muted); }
+  .field .fi { height:30px; border:1px solid var(--line); border-radius:6px; background:#fafbfc; }
+  .btnrow { margin-top:14px; display:flex; gap:8px; }
+  .btn { border:1px solid var(--accent); color:var(--accent); border-radius:6px; padding:6px 12px; font-size:12px; background:#fff; }
+  .btn.fill { background:var(--accent); color:#fff; }
+  .btn.ghost { border-color:var(--line); color:var(--muted); }
+
+  /* board */
+  .board { display:grid; grid-template-columns: repeat(6, 1fr); gap:8px; }
+  .col h4 { font-size:11px; margin:0 0 6px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+  .scard { border:1px solid var(--line); border-radius:8px; padding:8px; margin-bottom:6px; font-size:12px; background:#fafbfc; }
+  .scard.par { border-style:dashed; }
+  .scard .st { float:right; }
+  .note { font-size:12px; color:var(--muted); margin-top:8px; }
+
+  /* checklist */
+  .check { font-size:13px; margin:6px 0; } .check input { transform:translateY(1px); }
+  .locked { color:var(--muted); }
+  code { background:#eef1f5; padding:1px 5px; border-radius:4px; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Wireframes — modelling the parallel Review / Acknowledgement phases</h1>
+  <p class="sub">Quality Defects Inspection · Part II(a) always applies; II(b/c/d) are parallel, optional discipline reviews (same for V(a) vs V(b/c/d)). Legend: <span class="chip ok">✓ done</span> <span class="chip wip">• in&nbsp;progress</span> <span class="chip">— empty</span></p>
+
+  <!-- OPTION 1 -->
+  <h2>Option 1 — Phased stepper + parallel sub-tabs <span class="chip">recommended</span></h2>
+  <p class="sub">The 4 reviews collapse into ONE “Review” step; the 4 acknowledgements into ONE “Acknowledgement” step. Inside, a tab per discipline ((a) always, b/c/d when active). Tabs imply no order = parallel. Top-level stepper ≈ 8 steps.</p>
+  <div class="frame">
+    <div class="appbar"><b>Forma Forms — POC</b><span class="tab">Safety Observation</span><span class="tab active">Quality Defects Inspection</span><span class="tab">API Tester</span></div>
+    <div class="stepper">
+      <div class="step done"><div class="dot">✓</div><div class="lbl">Form Creation</div></div>
+      <div class="step done"><div class="dot">✓</div><div class="lbl">Part I — Lodging</div></div>
+      <div class="step active"><div class="dot">3</div><div class="lbl">Review (a·b·c·d)</div></div>
+      <div class="step"><div class="dot">4</div><div class="lbl">Part III — Rectification</div></div>
+      <div class="step"><div class="dot">5</div><div class="lbl">Part IV — Verification</div></div>
+      <div class="step"><div class="dot">6</div><div class="lbl">Acknowledgement (a·b·c·d)</div></div>
+      <div class="step"><div class="dot">7</div><div class="lbl">Part VI — PM</div></div>
+      <div class="step"><div class="dot">8</div><div class="lbl">Review</div></div>
+    </div>
+    <div class="frame" style="margin:0;">
+      <b style="font-size:14px;">Review</b>
+      <div class="subtabs" style="margin-top:10px;">
+        <span class="subtab">(a) SO/SO Rep <span class="chip ok">✓</span></span>
+        <span class="subtab active">(b) Civil &amp; Structural <span class="chip wip">•</span></span>
+        <span class="subtab">(c) Mechanical <span class="chip">—</span></span>
+        <span class="subtab">(d) Electrical <span class="chip">—</span></span>
+      </div>
+      <div class="field"><div class="fl">Are there any time or cost implications?</div><div class="fi" style="width:90px;"></div></div>
+      <div class="field"><div class="fl">Classification of Findings ▾</div><div class="fi"></div></div>
+      <div class="field"><div class="fl">Severity ▾</div><div class="fi" style="width:160px;"></div></div>
+      <div class="field"><div class="fl">Recommendations &amp; Remarks</div><div class="fi" style="height:54px;"></div></div>
+      <div class="btnrow"><span class="btn ghost">Back</span><span class="btn fill">Save this discipline</span><span class="btn">Next phase →</span></div>
+    </div>
+    <div class="legend">Each discipline tab saves independently (parallel). Status chip on each tab; (a) always present, b/c/d appear only when in play.</div>
+  </div>
+
+  <!-- OPTION 2 -->
+  <h2>Option 2 — Workflow board (status dashboard, no stepper)</h2>
+  <p class="sub">All sections as status cards grouped by phase columns; parallel reviews stacked under one column. Click a card to fill it, in any order. Best mirror of concurrent multi-party approval.</p>
+  <div class="frame">
+    <div class="appbar"><b>Forma Forms — POC</b><span class="tab">Safety Observation</span><span class="tab active">Quality Defects Inspection</span><span class="tab">API Tester</span></div>
+    <div class="board" style="margin-top:12px;">
+      <div class="col"><h4>Lodging</h4><div class="scard">Part I <span class="st chip ok">✓</span></div></div>
+      <div class="col"><h4>Review ∥</h4>
+        <div class="scard">II(a) SO/SO Rep <span class="st chip ok">✓</span></div>
+        <div class="scard par">II(b) C&amp;S <span class="st chip wip">•</span></div>
+        <div class="scard par">II(c) Mech <span class="st chip">—</span></div>
+        <div class="scard par">II(d) Elec <span class="st chip">—</span></div>
+      </div>
+      <div class="col"><h4>Rectify</h4><div class="scard">Part III <span class="st chip">—</span></div></div>
+      <div class="col"><h4>Verify</h4><div class="scard">Part IV <span class="st chip">—</span></div></div>
+      <div class="col"><h4>Acknowledge ∥</h4>
+        <div class="scard">V(a) <span class="st chip">—</span></div>
+        <div class="scard par">V(b) <span class="st chip">—</span></div>
+        <div class="scard par">V(c) <span class="st chip">—</span></div>
+        <div class="scard par">V(d) <span class="st chip">—</span></div>
+      </div>
+      <div class="col"><h4>PM</h4><div class="scard">Part VI <span class="st chip">—</span></div></div>
+    </div>
+    <div class="note">Dashed cards = parallel/optional. Clicking a card opens its fields (inline or dialog). No forced order; progress visible at a glance.</div>
+  </div>
+
+  <!-- OPTION 3 -->
+  <h2>Option 3 — Upfront reviewer selection + trimmed linear stepper</h2>
+  <p class="sub">After Part I, a “Which reviews apply?” step. (a) is locked on; tick any of b/c/d. The wizard then inserts only the chosen discipline steps — still a single linear sequence.</p>
+  <div class="frame">
+    <div class="appbar"><b>Forma Forms — POC</b><span class="tab">Safety Observation</span><span class="tab active">Quality Defects Inspection</span><span class="tab">API Tester</span></div>
+    <div class="frame" style="margin:12px 0 0;">
+      <b style="font-size:14px;">Which reviews apply?</b>
+      <div class="check locked"><input type="checkbox" checked disabled /> (a) SO/SO Rep Review &nbsp;<span class="chip">always</span></div>
+      <div class="check"><input type="checkbox" /> (b) SO Rep Assistant — Civil &amp; Structural</div>
+      <div class="check"><input type="checkbox" checked /> (c) SO Rep Assistant — Mechanical</div>
+      <div class="check"><input type="checkbox" /> (d) SO Rep Assistant — Electrical</div>
+      <div class="btnrow"><span class="btn ghost">Back</span><span class="btn fill">Continue →</span></div>
+    </div>
+    <div class="note">Resulting steps (example: a + c chosen):</div>
+    <div class="stepper">
+      <div class="step done"><div class="dot">✓</div><div class="lbl">Form Creation</div></div>
+      <div class="step done"><div class="dot">✓</div><div class="lbl">Part I</div></div>
+      <div class="step active"><div class="dot">3</div><div class="lbl">II(a) SO/SO Rep</div></div>
+      <div class="step"><div class="dot">4</div><div class="lbl">II(c) Mechanical</div></div>
+      <div class="step"><div class="dot">5</div><div class="lbl">Part III</div></div>
+      <div class="step"><div class="dot">6</div><div class="lbl">Part IV</div></div>
+      <div class="step"><div class="dot">7</div><div class="lbl">V(a)</div></div>
+      <div class="step"><div class="dot">8</div><div class="lbl">V(c)</div></div>
+      <div class="step"><div class="dot">9</div><div class="lbl">Part VI</div></div>
+      <div class="step"><div class="dot">10</div><div class="lbl">Review</div></div>
+    </div>
+    <div class="note">Simple to build (reuses current wizard), but b/c/d still appear in a sequence rather than truly parallel, and there’s no concurrent status view.</div>
+  </div>
+
+</div>
+</body>
+</html>

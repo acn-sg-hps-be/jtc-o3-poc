@@ -15,6 +15,7 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
 import LogoutIcon from '@mui/icons-material/Logout'
 import ApiTester from './pages/ApiTester.jsx'
 import SafetyObservationForm from './pages/SafetyObservationForm.jsx'
+import QualityInspectionForm from './pages/QualityInspectionForm.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import {
   login,
@@ -30,6 +31,7 @@ const DIRECT_HOST = 'https://developer.api.autodesk.com'
 // Top-level modules, shown as tabs in the app bar. They share the same auth + settings.
 const PAGES = [
   { key: 'safety', label: 'Safety Observation Form', Component: SafetyObservationForm },
+  { key: 'quality', label: 'Quality Defects Inspection', Component: QualityInspectionForm },
   { key: 'tester', label: 'API Tester', Component: ApiTester },
 ]
 

@@ -21,7 +21,7 @@ export const SECTIONS = [
       { fieldId: '979cf6c5-6b13-4c85-9b61-c533e8ec98da', label: 'Inspection Type', valueName: 'choiceVal', required: true, options: ['Physical', 'Drone', '360 Camera', 'CCTV'] },
       { fieldId: '4b8741d6-228d-4da9-9dca-b47965860609', label: 'Inspection Date', valueName: 'dateVal', required: true },
       { fieldId: '5a37f393-b9bc-42e4-ba15-a6ec6e7053a4', label: 'Location', valueName: 'textVal', required: true },
-      { fieldId: '732abe98-5886-4ac1-93f9-582706e91391', label: 'Description of Observation', valueName: 'textVal', required: true, multiline: true },
+      { fieldId: '732abe98-5886-4ac1-93f9-582706e91391', label: 'Description of Observation', valueName: 'textVal', required: true, multiline: true, attachPhoto: true },
       { fieldId: '629426f9-b7e1-473a-9aed-d49e46eb4392', label: 'JTC SWO Recommendation', valueName: 'choiceVal', required: true, options: ['Recommended', 'N.A.'] },
     ],
   },
@@ -31,7 +31,7 @@ export const SECTIONS = [
     fields: [
       { fieldId: '16807a5a-fcbc-4be8-aad6-b58c37776992', label: 'Rectification Date', valueName: 'dateVal', required: true },
       { fieldId: 'c5682767-e7f1-4e59-891f-db836deb56a5', label: 'Contractor Held Responsible for this Observation', valueName: 'choiceVal', required: true, options: ['Contractor Safety Team', 'Sub-contractors', 'N.A.'] },
-      { fieldId: '7774b710-7387-4ac2-8c17-c4f9e9f5baf3', label: 'Description of Rectification', valueName: 'textVal', required: true, multiline: true },
+      { fieldId: '7774b710-7387-4ac2-8c17-c4f9e9f5baf3', label: 'Description of Rectification', valueName: 'textVal', required: true, multiline: true, attachPhoto: true },
       { fieldId: '7e7b2ffd-3f0b-4696-9c6f-fa41b81411ed', label: 'Supporting Documents', valueName: 'toggleVal', required: false },
       { fieldId: '84f1acda-4730-446f-a6dd-9e767f2ee868', label: "Contractor's Details", valueName: 'textVal', required: true, multiline: true },
     ],

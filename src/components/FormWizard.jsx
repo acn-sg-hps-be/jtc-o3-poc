@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   Alert,
   AlertTitle,
@@ -9,6 +9,7 @@ import {
   Checkbox,
   Chip,
   CircularProgress,
+  Dialog,
   FormControl,
   FormControlLabel,
   InputLabel,
@@ -26,6 +27,7 @@ import {
 import CallSplitIcon from '@mui/icons-material/CallSplit'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import BlockIcon from '@mui/icons-material/Block'
+import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined'
 import { createForm, batchUpdateValues } from '../api/accForms.js'
 
 const today = new Date().toISOString().slice(0, 10)
@@ -71,6 +73,8 @@ export default function FormWizard({
   const [activeStep, setActiveStep] = useState(0)
   const [busy, setBusy] = useState(false)
   const [stepError, setStepError] = useState(null)
+  // POC-only local photo attachments (preview + filename), keyed by fieldId. Never sent to Forma.
+  const [photos, setPhotos] = useState({})
 
   const canCall = token && projectId
 
@@ -223,6 +227,7 @@ export default function FormWizard({
     setDescription('')
     setActiveStep(0)
     setStepError(null)
+    setPhotos({})
   }
 
   // Some choice fields filter their options by another field's value (e.g. Systems &
@@ -236,8 +241,17 @@ export default function FormWizard({
   }
   function renderFields(section) {
     return section.fields.filter(isFieldVisible).map((f) => (
-      <FieldInput key={f.fieldId} field={f} value={values[f.fieldId]}
-        options={effectiveOptions(f)} onChange={setField} />
+      <Stack key={f.fieldId} spacing={1}>
+        <FieldInput field={f} value={values[f.fieldId]}
+          options={effectiveOptions(f)} onChange={setField} />
+        {f.attachPhoto && (
+          <PhotoAttach
+            photo={photos[f.fieldId]}
+            onPick={(p) => setPhotos((prev) => ({ ...prev, [f.fieldId]: p }))}
+            onRemove={() => setPhotos((prev) => { const n = { ...prev }; delete n[f.fieldId]; return n })}
+          />
+        )}
+      </Stack>
     ))
   }
 
@@ -454,6 +468,47 @@ export default function FormWizard({
         </CardContent>
       </Card>
     </Stack>
+  )
+}
+
+// POC-only photo attach: shows a local preview + lightbox. NOT uploaded to Forma — real
+// photo support needs the Data Management upload + Relationships API (and likely a backend).
+function PhotoAttach({ photo, onPick, onRemove }) {
+  const inputRef = useRef(null)
+  const [open, setOpen] = useState(false)
+  return (
+    <Box>
+      {photo ? (
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'flex-start' }}>
+          <Box component="img" src={photo.dataUrl} alt="" onClick={() => setOpen(true)}
+            sx={{
+              width: 160, height: 160, objectFit: 'cover', borderRadius: 1.5,
+              border: '1px solid', borderColor: 'divider', cursor: 'zoom-in',
+            }} />
+          <Button size="small" color="inherit" onClick={onRemove}>Remove</Button>
+        </Stack>
+      ) : (
+        <Button size="small" variant="outlined" startIcon={<PhotoCameraOutlinedIcon />}
+          onClick={() => inputRef.current?.click()} sx={{ alignSelf: 'flex-start' }}>
+          Attach photo
+        </Button>
+      )}
+      <input ref={inputRef} type="file" accept="image/*" hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) {
+            const reader = new FileReader()
+            reader.onload = () => onPick({ name: file.name, dataUrl: reader.result })
+            reader.readAsDataURL(file)
+          }
+          e.target.value = ''
+        }} />
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth={false}
+        slotProps={{ paper: { sx: { m: 0, bgcolor: 'transparent', boxShadow: 'none', overflow: 'visible' } } }}>
+        <Box component="img" src={photo?.dataUrl} alt="" onClick={() => setOpen(false)}
+          sx={{ maxWidth: '92vw', maxHeight: '88vh', display: 'block', borderRadius: 1, cursor: 'zoom-out' }} />
+      </Dialog>
+    </Box>
   )
 }
 
